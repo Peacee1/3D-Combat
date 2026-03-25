@@ -506,8 +506,8 @@ MonoBehaviour:
   moveDuration: 0.6
   moveEase: 9
   faceSpeed: 5
-  labelOffsetY: 0.5
-  labelFontSize: 3
+  labelOffsetY: 1
+  labelFontSize: 0.5
   selectedLabelColor: {r: 1, g: 0.85, b: 0.2, a: 1}
   unselectedLabelColor: {r: 0.7, g: 0.7, b: 0.7, a: 1}
 --- !u!1001 &805348861
