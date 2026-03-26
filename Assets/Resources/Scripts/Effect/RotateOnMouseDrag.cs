@@ -1,66 +1,77 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Chỉ rotate object khi click TRÚNG object này rồi drag chuột
+/// </summary>
 public class RotateOnMouseDrag : MonoBehaviour
 {
     [Header("Rotation Settings")]
     [SerializeField] private float rotationSpeed = 200f;
     [SerializeField] private bool invertDirection = false;
-    [SerializeField] private bool requireMouseHold = true; // false = luôn quay khi di chuột
 
     private Vector2 _lastMousePos;
     private bool _isDragging;
     private Mouse _mouse;
+    private Camera _mainCamera;
 
     private void OnEnable()
     {
         _mouse = Mouse.current;
+        _mainCamera = Camera.main;
+        _isDragging = false;
+    }
+
+    private void OnDisable()
+    {
+        _isDragging = false;
     }
 
     private void Update()
     {
-        if (_mouse == null)
-        {
-            _mouse = Mouse.current;
-            return;
-        }
+        if (_mouse == null) { _mouse = Mouse.current; return; }
+        if (_mainCamera == null) { _mainCamera = Camera.main; return; }
 
-        if (requireMouseHold)
+        // Bắt đầu drag: chỉ khi click trúng object này
+        if (_mouse.leftButton.wasPressedThisFrame)
         {
-            // Chỉ quay khi giữ chuột trái
-            if (_mouse.leftButton.wasPressedThisFrame)
+            if (IsClickingThisObject())
             {
                 _isDragging = true;
                 _lastMousePos = _mouse.position.ReadValue();
             }
-
-            if (_mouse.leftButton.wasReleasedThisFrame)
-            {
-                _isDragging = false;
-            }
-
-            if (_isDragging)
-            {
-                RotateByMouse();
-            }
         }
-        else
+
+        // Kết thúc drag khi nhả chuột
+        if (_mouse.leftButton.wasReleasedThisFrame)
         {
-            // Luôn quay khi di chuột (không cần giữ)
-            RotateByMouse();
+            _isDragging = false;
+        }
+
+        // Rotate khi đang drag
+        if (_isDragging && _mouse.leftButton.isPressed)
+        {
+            Vector2 currentPos = _mouse.position.ReadValue();
+            Vector2 delta = currentPos - _lastMousePos;
+
+            float dir = invertDirection ? 1f : -1f;
+            float amount = delta.x * rotationSpeed * dir * Time.deltaTime;
+            transform.Rotate(Vector3.up, amount, Space.World);
+
+            _lastMousePos = currentPos;
         }
     }
 
-    private void RotateByMouse()
+    private bool IsClickingThisObject()
     {
-        Vector2 currentMousePos = _mouse.position.ReadValue();
-        Vector2 delta = currentMousePos - _lastMousePos;
+        Ray ray = _mainCamera.ScreenPointToRay(_mouse.position.ReadValue());
 
-        float direction = invertDirection ? 1f : -1f;
-        float rotationAmount = delta.x * rotationSpeed * direction * Time.deltaTime;
+        // Raycast — kiểm tra có trúng collider thuộc object này (hoặc child) không
+        if (Physics.Raycast(ray, out RaycastHit hit))
+        {
+            return hit.collider != null && hit.collider.transform.IsChildOf(transform);
+        }
 
-        transform.Rotate(Vector3.up, rotationAmount, Space.World);
-
-        _lastMousePos = currentMousePos;
+        return false;
     }
 }
